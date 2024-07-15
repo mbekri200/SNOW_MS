@@ -1,0 +1,9 @@
+{
+    "account"   : "cugpvmf-sxb90139",
+    "user"      : "MBEK",
+    "password"  : "DatalabDemo123",
+    "role"      : "ACCOUNTADMIN",
+    "warehouse" : "COMPUTE_WH",
+    "database"  : "analytics",
+    "schema"    : "JF_SEMANTIC_MODELS"
+}
