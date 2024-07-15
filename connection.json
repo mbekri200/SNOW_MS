@@ -1,7 +1,7 @@
 {
-    "account"   : "cugpvmf-sxb90139",
-    "user"      : "MBEK",
-    "password"  : "DatalabDemo123",
+    "account"   : "",
+    "user"      : "",
+    "password"  : "",
     "role"      : "ACCOUNTADMIN",
     "warehouse" : "COMPUTE_WH",
     "database"  : "analytics",
