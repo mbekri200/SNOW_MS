@@ -24,7 +24,6 @@ def create_semantic_layer(session,db_name,schema_name):
     run_sql(f''' create tag if not exists {db_name}.{schema_name}.SNOW_MS_{schema_name}_SEMANTIC_MODEL_METADATA''', session)
     run_sql(f''' create tag if not exists {db_name}.{schema_name}.SNOW_MS_{schema_name}_SEMANTIC_MODEL_DIMENSIONS''', session)
     run_sql(f''' create tag if not exists {db_name}.{schema_name}.SNOW_MS_{schema_name}_MEASURES''', session)
-s
 
 def create_metric(session,entity_name,db_name,schema_name,key,desc):
 

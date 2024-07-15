@@ -1,5 +1,5 @@
 
-from useful_fct import create_semantic_layer, run_sql,register_semantic_model
+from useful_fct import create_semantic_layer, run_sql
 from snowflake.snowpark import Session, DataFrame, Window, WindowSpec
 import json
 import snowflake.snowpark.functions as F
@@ -63,17 +63,18 @@ class Semantic_Layer:
 
     def get_entities(self):
         query=self.session.sql(f'''SHOW TAGS LIKE 'SNOW_METRIC_STORE_ENTITY_%' IN SCHEMA {self.db_name}.{self.schema_name}''')
-        query.show()
-        df=query.select(col('"name"').alias("entity_name"),col('"allowed_values"').alias("keys"),col('"comment"').alias("description"))
+        df = query.with_column("entity_name", query['"name"'].substr(26,1000))  # Manipulation de la colonne "name"
+
+        df=df.select(col("entity_name"),col('"allowed_values"').alias("keys"),col('"comment"').alias("description"))
         df.show()
 
     
     def register_semantic_model(self,sm):
         run_sql(f'''CREATE or replace view {self.db_name}.{self.schema_name}.{sm.sm_name}
-                COMMENT = ' '
+                COMMENT = '{sm.description}'
                 TAG (
-                    {self.db_name}.{self.schema_name}.SNOW_MS_JAFFLE_SHOP_OBJECT = '{{"type": "sm_view"}}',
-{self.db_name}.{self.schema_name}.SNOW_MS_JAFFLE_SHOP_SEMANTIC_MODEL_METADATA = '{{"entities": ["{sm.entities.entity_name}"], "timestamp_col": "{sm.timestamp_col}"}}',
+                    {self.db_name}.{self.schema_name}.SNOW_MS_{self.schema_name}_OBJECT = '{{"type": "sm_view"}}',
+{self.db_name}.{self.schema_name}.SNOW_MS_{self.schema_name}_SEMANTIC_MODEL_METADATA = '{{"entities": ["{sm.entities.entity_name}"], "timestamp_col": "{sm.timestamp_col}"}}',
 {self.db_name}.{self.schema_name}.SNOW_METRIC_STORE_ENTITY_ORDERS = '{sm.entities.join_keys}'
                 )
                 AS (select * from {sm.dmt_db_src}.{sm.dmt_schema_src}.{sm.dmt_table_src})''',self.session)
@@ -91,14 +92,17 @@ class Semantic_Layer:
         return df_selected
     
     def register_dimension(self,sm,dimension):
-        run_sql(f'''ALTER TABLE {self.db_name}.{self.schema_name}.{sm.sm_name} MODIFY COLUMN {dimension.dimension_name} SET TAG SNOW_MS_{self.schema_name}_SEMANTIC_MODEL_DIMENSIONS = '{{"type":"{dimension.dimension_type}", "type_params":{dimension.type_param},"descripton":{dimension.desc}}}';
+        run_sql(f'''ALTER TABLE {self.db_name}.{self.schema_name}.{sm.sm_name} MODIFY COLUMN {dimension.dimension_name} SET TAG {self.db_name}.{self.schema_name}.SNOW_MS_{self.schema_name}_SEMANTIC_MODEL_DIMENSIONS = '{{"type":"{dimension.dimension_type}", "type_params":{dimension.type_param},"descripton":{dimension.desc}}}';
 ''',self.session)
     
     def register_measure(self,sm,measure):
+
         run_sql(f'''ALTER TAG {self.db_name}.{self.schema_name}.SNOW_MS_{self.schema_name}_MEASURES ADD ALLOWED_VALUES '{{{sm.sm_name}:{measure.measure_name}}}';
  ''',self.session)
+        
         run_sql(f'''create tag if not exists {self.db_name}.{self.schema_name}.SNOW_MS_MEASURE_{sm.sm_name}_{measure.measure_name} COMMENT='{measure.measure_name} tag';
  ''',self.session)
+        
         run_sql(f''' ALTER TABLE {self.db_name}.{self.schema_name}.{sm.sm_name} SET TAG {self.db_name}.{self.schema_name}.SNOW_MS_MEASURE_{sm.sm_name}_{measure.measure_name} = '{{"description":"{measure.descr}", "aggregation":"{measure.agg}", "expression":"{measure.exp}"}}';''',self.session)
     
     def get_measures(self,sm): 
